@@ -1,0 +1,17 @@
+# Nginx Role: roles/nginx.yml
+- name: Check if Nginx is installed
+  command: nginx -v 
+  register: nginx_installed
+
+- name: Install Nginx
+  apt: 
+    name: nginx
+    state: present
+    update_cache: yes
+  when: nginx_installed.rc != 0
+
+- name: Ensure Nginx is running
+  service:
+    name: nginx
+    state: started
+    enabled: true

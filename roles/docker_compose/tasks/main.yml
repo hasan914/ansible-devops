@@ -1,0 +1,11 @@
+# Docker Compose Role: roles/docker_compose.yml
+- name: Check if Docker Compose is installed
+  command: docker-compose --version
+  register: docker_compose_installed
+
+- name: Download Docker Compose binary
+  get_url:
+    url: https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: '0755'
+  when: docker_compose_installed.rc != 0
