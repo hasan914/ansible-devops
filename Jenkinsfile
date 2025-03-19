@@ -27,7 +27,8 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    sh 'docker run --rm -v $PWD:/app -w /app maven:latest mvn clean package'
+                    def workspace = pwd()
+                    sh "docker run --rm -v ${workspace}:/app -w /app maven:latest mvn clean package"
                 }
             }
         }
