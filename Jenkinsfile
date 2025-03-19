@@ -19,7 +19,7 @@ pipeline {
                             branches: [[name: '*/main']], 
                             userRemoteConfigs: [[
                                 url: 'https://github.com/hasan914/ansible-devops',
-                                credentialsId: 'your-jenkins-credentials-id' // Set your Jenkins Git credentials
+                                credentialsId: 'your-jenkins-credentials-id' // Replace with your Jenkins Git credentials ID
                             ]]
                         ])
                     } catch (err) {
@@ -48,7 +48,7 @@ pipeline {
                 script {
                     try {
                         def mavenVersion = sh(
-                            script: "mvn -version | awk '/Apache Maven/ {print \\\\$3}'",
+                            script: 'mvn -version | grep "Apache Maven" | cut -d " " -f 3',
                             returnStdout: true
                         ).trim()
                         echo "Maven Version: ${mavenVersion}"
