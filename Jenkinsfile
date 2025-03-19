@@ -1,25 +1,88 @@
 pipeline {
     agent any
 
+    environment {
+        MAVEN_HOME = "/usr/share/maven"
+    }
+
+    options {
+        timestamps() // Enables timestamps in console output
+    }
+
     stages {
-
-        stage('Docker Node Version') {
+        stage('Checkout Code') {
             steps {
                 script {
-                    def node_version = sh(script: "docker run --rm --network jenkins_A4_network node:14 node -v", returnStdout: true).trim()
-                    echo "Node.js Version: ${node_version} Hasan Javed"
+                    try {
+                        checkout([
+                            $class: 'GitSCM', 
+                            branches: [[name: '*/main']], 
+                            userRemoteConfigs: [[
+                                url: 'https://github.com/hasan914/ansible-devops',
+                                credentialsId: 'your-jenkins-credentials-id' // Set your Jenkins Git credentials
+                            ]]
+                        ])
+                    } catch (err) {
+                        echo "Git Checkout failed: ${err}"
+                        error("Stopping pipeline execution")
+                    }
                 }
             }
         }
 
-        stage('Docker Maven Version') {
+        stage('Build') {
             steps {
                 script {
-                    def maven_version = sh(script: "docker run --rm --network jenkins_A4_network maven:3.8.1 mvn -version | awk '/Apache Maven/ {print \"\\$3\"}'", returnStdout: true).trim()
-                    echo "Maven Version: ${maven_version} Hasan Javed"
+                    try {
+                        sh 'mvn clean package'
+                    } catch (err) {
+                        echo "Build failed: ${err}"
+                        error("Stopping pipeline execution")
+                    }
                 }
             }
         }
 
-    } // Closing stages
-} // Closing pipeline
+        stage('Extract Maven Version') {
+            steps {
+                script {
+                    try {
+                        def mavenVersion = sh(
+                            script: "mvn -version | awk '/Apache Maven/ {print \\\\$3}'",
+                            returnStdout: true
+                        ).trim()
+                        echo "Maven Version: ${mavenVersion}"
+                    } catch (err) {
+                        echo "Failed to extract Maven version: ${err}"
+                        error("Stopping pipeline execution")
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    try {
+                        sh 'ansible-playbook -i inventory.ini deploy.yml'
+                    } catch (err) {
+                        echo "Deployment failed: ${err}"
+                        error("Stopping pipeline execution")
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline execution completed."
+        }
+        success {
+            echo "Pipeline executed successfully!"
+        }
+        failure {
+            echo "Pipeline execution failed. Please check logs."
+        }
+    }
+}
